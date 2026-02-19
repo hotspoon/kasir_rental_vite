@@ -9,18 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StartShiftRouteImport } from './routes/start-shift'
+import { Route as ReturnRouteImport } from './routes/return'
+import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as CustomersIdRouteImport } from './routes/customers.$id'
 
+const StartShiftRoute = StartShiftRouteImport.update({
+  id: '/start-shift',
+  path: '/start-shift',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReturnRoute = ReturnRouteImport.update({
+  id: '/return',
+  path: '/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentsRoute = PaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -28,39 +48,115 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvoiceIdRoute = InvoiceIdRouteImport.update({
+  id: '/invoice/$id',
+  path: '/invoice/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersIdRoute = CustomersIdRouteImport.update({
+  id: '/customers/$id',
+  path: '/customers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
+  '/payments': typeof PaymentsRoute
+  '/return': typeof ReturnRoute
+  '/start-shift': typeof StartShiftRoute
+  '/customers/$id': typeof CustomersIdRoute
+  '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
+  '/payments': typeof PaymentsRoute
+  '/return': typeof ReturnRoute
+  '/start-shift': typeof StartShiftRoute
+  '/customers/$id': typeof CustomersIdRoute
+  '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
+  '/payments': typeof PaymentsRoute
+  '/return': typeof ReturnRoute
+  '/start-shift': typeof StartShiftRoute
+  '/customers/$id': typeof CustomersIdRoute
+  '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/login'
+  fullPaths:
+    | '/'
+    | '/checkout'
+    | '/login'
+    | '/payments'
+    | '/return'
+    | '/start-shift'
+    | '/customers/$id'
+    | '/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/login'
-  id: '__root__' | '/' | '/about' | '/login'
+  to:
+    | '/'
+    | '/checkout'
+    | '/login'
+    | '/payments'
+    | '/return'
+    | '/start-shift'
+    | '/customers/$id'
+    | '/invoice/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/checkout'
+    | '/login'
+    | '/payments'
+    | '/return'
+    | '/start-shift'
+    | '/customers/$id'
+    | '/invoice/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
+  CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
+  PaymentsRoute: typeof PaymentsRoute
+  ReturnRoute: typeof ReturnRoute
+  StartShiftRoute: typeof StartShiftRoute
+  CustomersIdRoute: typeof CustomersIdRoute
+  InvoiceIdRoute: typeof InvoiceIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/start-shift': {
+      id: '/start-shift'
+      path: '/start-shift'
+      fullPath: '/start-shift'
+      preLoaderRoute: typeof StartShiftRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/return': {
+      id: '/return'
+      path: '/return'
+      fullPath: '/return'
+      preLoaderRoute: typeof ReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payments': {
+      id: '/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof PaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -68,11 +164,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -82,13 +178,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invoice/$id': {
+      id: '/invoice/$id'
+      path: '/invoice/$id'
+      fullPath: '/invoice/$id'
+      preLoaderRoute: typeof InvoiceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers/$id': {
+      id: '/customers/$id'
+      path: '/customers/$id'
+      fullPath: '/customers/$id'
+      preLoaderRoute: typeof CustomersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
+  CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
+  PaymentsRoute: PaymentsRoute,
+  ReturnRoute: ReturnRoute,
+  StartShiftRoute: StartShiftRoute,
+  CustomersIdRoute: CustomersIdRoute,
+  InvoiceIdRoute: InvoiceIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

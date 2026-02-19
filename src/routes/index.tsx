@@ -1,11 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getStoredShift } from "@/lib/shift-storage";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  beforeLoad: () => {
+    const shift = getStoredShift();
+    throw redirect({ to: shift ? "/checkout" : "/start-shift" });
+  },
+  component: IndexRedirect,
 });
 
-function Index() {
-  return (
-    <h1 className="text-3xl font-bold underline">Hello world!</h1>
-  );
+function IndexRedirect() {
+  return null;
 }
