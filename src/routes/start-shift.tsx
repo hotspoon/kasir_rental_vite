@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useShiftContext } from "@/context/shift-context";
 import { getErrorMessage } from "@/lib/api/client";
 import { queryKeys } from "@/lib/api/query-keys";
 import { listStaff, listStores } from "@/lib/api/sakila";
@@ -19,8 +20,7 @@ export const Route = createFileRoute("/start-shift")({
 
 function StartShiftPage() {
   const navigate = useNavigate();
-  const { shiftContext } = Route.useRouteContext();
-  const shift = useContext(shiftContext);
+  const { setShift } = useShiftContext();
   const search = Route.useSearch();
   const [storeId, setStoreId] = useState<string>("");
   const [staffId, setStaffId] = useState<string>("");
@@ -106,7 +106,7 @@ function StartShiftPage() {
         className="mt-6 w-full"
         disabled={!canSubmit}
         onClick={() => {
-          shift?.setShift({ storeId, staffId });
+          setShift({ storeId, staffId });
           navigate({ to: search.redirect ?? "/checkout" });
         }}
       >

@@ -3,6 +3,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const mockShiftContext = vi.hoisted(() => ({
+  storeId: "1",
+  staffId: "2",
+  hasActiveShift: true,
+  setShift: vi.fn(),
+  clearShift: vi.fn(),
+}));
+
 vi.mock("@tanstack/react-router", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-router")>(
     "@tanstack/react-router",
@@ -13,6 +21,10 @@ vi.mock("@tanstack/react-router", async () => {
     Link: ({ children }: { children: ReactNode }) => <a href="#">{children}</a>,
   };
 });
+
+vi.mock("@/context/shift-context", () => ({
+  useShiftContext: () => mockShiftContext,
+}));
 
 vi.mock("@/lib/api/sakila", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api/sakila")>(
@@ -26,8 +38,6 @@ vi.mock("@/lib/api/sakila", async () => {
   };
 });
 
-import type { ShiftContextValue } from "@/context/shift-context";
-import { ShiftContext } from "@/context/shift-context";
 import type { Invoice } from "@/lib/api/sakila";
 import { getInvoiceByRentalId, payInvoice } from "@/lib/api/sakila";
 import { PaymentsPage } from "@/routes/payments";
@@ -46,11 +56,22 @@ const defaultInvoice: Invoice = {
   filmTitle: "TITANIC BOONDOCK",
 };
 
-function renderPaymentsPage({
-  shiftOverrides,
-}: {
-  shiftOverrides?: Partial<ShiftContextValue>;
-} = {}) {
+function applyMockShiftState(
+  overrides: Partial<{
+    storeId: string | null;
+    staffId: string | null;
+    hasActiveShift: boolean;
+  }> = {},
+) {
+  Object.assign(mockShiftContext, {
+    storeId: "1",
+    staffId: "2",
+    hasActiveShift: true,
+    ...overrides,
+  });
+}
+
+function renderPaymentsPage() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -62,25 +83,16 @@ function renderPaymentsPage({
     },
   });
 
-  const shiftValue: ShiftContextValue = {
-    storeId: "1",
-    staffId: "2",
-    setShift: vi.fn(),
-    clearShift: vi.fn(),
-    ...shiftOverrides,
-  };
-
   return render(
-    <ShiftContext.Provider value={shiftValue}>
-      <QueryClientProvider client={queryClient}>
-        <PaymentsPage />
-      </QueryClientProvider>
-    </ShiftContext.Provider>,
+    <QueryClientProvider client={queryClient}>
+      <PaymentsPage />
+    </QueryClientProvider>,
   );
 }
 
 describe("Payments page", () => {
   beforeEach(() => {
+    applyMockShiftState();
     mockedGetInvoiceByRentalId.mockResolvedValue(defaultInvoice);
     mockedPayInvoice.mockResolvedValue({
       success: true,
@@ -175,9 +187,11 @@ describe("Payments page", () => {
   });
 
   it("shows an error if user pays without active shift", async () => {
-    renderPaymentsPage({
-      shiftOverrides: { staffId: null },
+    applyMockShiftState({
+      staffId: null,
+      hasActiveShift: false,
     });
+    renderPaymentsPage();
     await screen.findByText(`Film: ${defaultInvoice.filmTitle}`);
 
     fireEvent.change(screen.getByLabelText("Amount"), {

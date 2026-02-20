@@ -1,23 +1,23 @@
-import {
-  createContext,
-  useContext,
-} from "react";
+import { useShallow } from "zustand/react/shallow";
+import type { StoredShift } from "@/lib/shift-storage";
+import { useShiftStore } from "@/stores/shift-store";
 
 export type ShiftContextValue = {
   storeId: string | null;
   staffId: string | null;
-  setShift: (v: { storeId: string; staffId: string }) => void;
+  hasActiveShift: boolean;
+  setShift: (v: StoredShift) => void;
   clearShift: () => void;
 };
 
-export const ShiftContext = createContext<ShiftContextValue | undefined>(
-  undefined,
-);
-
 export function useShiftContext() {
-  const value = useContext(ShiftContext);
-  if (!value) {
-    throw new Error("useShiftContext must be used within ShiftProvider");
-  }
-  return value;
+  return useShiftStore(
+    useShallow((state) => ({
+      storeId: state.storeId,
+      staffId: state.staffId,
+      hasActiveShift: state.hasActiveShift,
+      setShift: state.setShift,
+      clearShift: state.clearShift,
+    })),
+  );
 }

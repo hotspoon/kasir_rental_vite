@@ -1,27 +1,20 @@
 import {
-  createRootRouteWithContext,
+  createRootRoute,
   Link,
   Outlet,
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { useContext } from "react";
-import type { Context } from "react";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { NotFoundPage } from "@/components/common/not-found-page";
-import type { ShiftContextValue } from "@/context/shift-context";
+import { useShiftContext } from "@/context/shift-context";
 import { getStoredShift } from "@/lib/shift-storage";
 import { Button } from "@/components/ui/button";
 
-export interface MyRouterContext {
-  shiftContext: Context<ShiftContextValue | undefined>;
-}
-
 const RootLayout = () => {
   const navigate = useNavigate();
-  const { shiftContext } = Route.useRouteContext();
-  const shift = useContext(shiftContext);
-  const isStarted = Boolean(shift?.storeId && shift?.staffId);
+  const shift = useShiftContext();
+  const isStarted = shift.hasActiveShift;
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -32,7 +25,7 @@ const RootLayout = () => {
               Kasir Rental
             </span>
             <span className="text-sm">
-              Store: {shift?.storeId ?? "-"} | Kasir: {shift?.staffId ?? "-"}
+              Store: {shift.storeId ?? "-"} | Kasir: {shift.staffId ?? "-"}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -68,7 +61,7 @@ const RootLayout = () => {
               size="sm"
               disabled={!isStarted}
               onClick={() => {
-                shift?.clearShift();
+                shift.clearShift();
                 navigate({ to: "/start-shift" });
               }}
             >
@@ -85,7 +78,7 @@ const RootLayout = () => {
   );
 };
 
-export const Route = createRootRouteWithContext<MyRouterContext>()({
+export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
     if (location.pathname === "/start-shift") {
       return;
