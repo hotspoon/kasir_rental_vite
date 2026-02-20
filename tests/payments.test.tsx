@@ -92,6 +92,7 @@ function renderPaymentsPage() {
 
 describe("Payments page", () => {
   beforeEach(() => {
+    window.history.replaceState({}, "", "/payments?rentalId=1");
     applyMockShiftState();
     mockedGetInvoiceByRentalId.mockResolvedValue(defaultInvoice);
     mockedPayInvoice.mockResolvedValue({
@@ -118,6 +119,17 @@ describe("Payments page", () => {
     });
 
     expect(screen.getByRole("button", { name: "Pay" })).toBeEnabled();
+  });
+
+  it("keeps Pay button disabled when amount is invalid", async () => {
+    renderPaymentsPage();
+    await screen.findByText(`Film: ${defaultInvoice.filmTitle}`);
+
+    fireEvent.change(screen.getByLabelText("Amount"), {
+      target: { value: "-" },
+    });
+
+    expect(screen.getByRole("button", { name: "Pay" })).toBeDisabled();
   });
 
   it("submits payment and shows remaining due for partial payment", async () => {

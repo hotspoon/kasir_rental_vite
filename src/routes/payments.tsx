@@ -11,16 +11,26 @@ export const Route = createFileRoute("/payments")({
   component: PaymentsPage,
 });
 
+function getInitialRentalId() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return (new URLSearchParams(window.location.search).get("rentalId") ?? "").trim();
+}
+
 export function PaymentsPage() {
   const queryClient = useQueryClient();
   const { staffId } = useShiftContext();
-  const [rentalId, setRentalId] = useState("1");
+  const [rentalId, setRentalId] = useState(getInitialRentalId);
   const [amount, setAmount] = useState("");
   const [feedback, setFeedback] = useState<{
     tone: "success" | "error";
     text: string;
   } | null>(null);
-  const amountValue = amount.trim().length === 0 ? 0 : Number(amount);
+  const parsedAmount = amount.trim().length === 0 ? null : Number(amount);
+  const isAmountValid =
+    parsedAmount !== null && Number.isFinite(parsedAmount) && parsedAmount > 0;
 
   const invoiceQuery = useQuery({
     queryKey: queryKeys.invoice(rentalId),
@@ -38,12 +48,15 @@ export function PaymentsPage() {
       if (!staffId) {
         throw new Error("Shift belum aktif.");
       }
+      if (!isAmountValid || parsedAmount === null) {
+        throw new Error("Amount tidak valid.");
+      }
 
       return payInvoice({
         rentalId: invoice.rentalId,
         customerId: invoice.customerId,
         staffId,
-        amount: amountValue,
+        amount: parsedAmount,
       });
     },
     onSuccess: async (result) => {
@@ -71,6 +84,9 @@ export function PaymentsPage() {
   const total = invoiceQuery.data?.total ?? 0;
   const paid = invoiceQuery.data?.paid ?? 0;
   const due = invoiceQuery.data?.due ?? 0;
+  const isInvoiceLoaded = Boolean(invoiceQuery.data);
+  const isInvoiceSettled = isInvoiceLoaded && due <= 0;
+  const formatRupiah = (value: number) => `Rp ${value.toLocaleString("id-ID")}`;
 
   return (
     <section className="mx-auto max-w-2xl rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -95,17 +111,55 @@ export function PaymentsPage() {
         />
       </label>
 
-      <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-        <p className="text-sm text-zinc-600">Invoice Summary</p>
-        <div className="mt-2 space-y-1 text-sm">
-          <p>Rental: {rentalId || "-"}</p>
-          <p>Film: {invoiceQuery.data?.filmTitle ?? "-"}</p>
-          <p>Customer: {invoiceQuery.data?.customerName ?? "-"}</p>
-          <p>Total: Rp {total.toLocaleString("id-ID")}</p>
-          <p>Paid: Rp {paid.toLocaleString("id-ID")}</p>
-          <p className="font-semibold text-zinc-900">
-            Due: Rp {due.toLocaleString("id-ID")}
-          </p>
+      <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50 px-4 py-3">
+          <p className="text-sm font-medium text-zinc-700">Invoice Summary</p>
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              !isInvoiceLoaded
+                ? "bg-zinc-200 text-zinc-600"
+                : isInvoiceSettled
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-amber-100 text-amber-700"
+            }`}
+          >
+            {!isInvoiceLoaded
+              ? "BELUM DIMUAT"
+              : isInvoiceSettled
+                ? "LUNAS"
+                : "BELUM LUNAS"}
+          </span>
+        </div>
+
+        <div className="px-4 py-4">
+          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+            <div className="space-y-1 text-sm text-zinc-700">
+              <p>Rental: {rentalId || "-"}</p>
+              <p>Film: {invoiceQuery.data?.filmTitle ?? "-"}</p>
+              <p>Customer: {invoiceQuery.data?.customerName ?? "-"}</p>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-lg border border-zinc-200 p-3">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Total</p>
+              <p className="mt-1 text-sm font-semibold text-zinc-900 tabular-nums">
+                {formatRupiah(total)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 p-3">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Paid</p>
+              <p className="mt-1 text-sm font-semibold text-zinc-900 tabular-nums">
+                {formatRupiah(paid)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-900 bg-zinc-900 p-3 text-white">
+              <p className="text-xs uppercase tracking-wide text-zinc-300">Due</p>
+              <p className="mt-1 text-base font-semibold tabular-nums">
+                {formatRupiah(due)}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -120,6 +174,7 @@ export function PaymentsPage() {
         <input
           type="number"
           min={0}
+          step="0.01"
           className="h-10 w-full rounded-md border border-zinc-300 px-3 text-sm outline-none focus:border-zinc-900"
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
@@ -128,7 +183,7 @@ export function PaymentsPage() {
 
       <Button
         className="mt-4 w-full"
-        disabled={amountValue <= 0 || due <= 0 || paymentMutation.isPending}
+        disabled={!isAmountValid || due <= 0 || paymentMutation.isPending}
         onClick={() => paymentMutation.mutate()}
       >
         {paymentMutation.isPending ? "Paying..." : "Pay"}

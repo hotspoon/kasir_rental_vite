@@ -41,7 +41,10 @@ function CheckoutPage() {
   const [filmQuery, setFilmQuery] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [status, setStatus] = useState<string>("");
+  const [status, setStatus] = useState<{
+    tone: "error";
+    text: string;
+  } | null>(null);
 
   // const deferredCustomerQuery = useDeferredValue(customerQuery);
   const deferredFilmQuery = useDeferredValue(filmQuery);
@@ -95,8 +98,8 @@ function CheckoutPage() {
       });
     },
     onSuccess: async (result) => {
-      setStatus(result.message);
       setCart([]);
+      setStatus(null);
 
       if (storeId) {
         await queryClient.invalidateQueries({
@@ -104,15 +107,26 @@ function CheckoutPage() {
         });
       }
 
-      navigate({ to: "/invoice/$id", params: { id: result.invoiceId } });
+      navigate({
+        to: "/invoice/$id",
+        params: { id: result.invoiceId },
+        search: { message: result.message },
+      });
     },
     onError: (error) => {
-      setStatus(getErrorMessage(error));
+      setStatus({
+        tone: "error",
+        text: getErrorMessage(error),
+      });
     },
   });
 
   const cartCount = useMemo(
     () => cart.reduce((total, item) => total + item.qty, 0),
+    [cart],
+  );
+  const cartQtyMap = useMemo(
+    () => Object.fromEntries(cart.map((item) => [item.filmId, item.qty])),
     [cart],
   );
 
@@ -203,13 +217,15 @@ function CheckoutPage() {
             className="mt-4 w-full"
             disabled={!canSubmit}
             onClick={() => {
-              setStatus("");
+              setStatus(null);
               checkoutMutation.mutate();
             }}
           >
             {checkoutMutation.isPending ? "Submitting..." : "Submit Checkout"}
           </Button>
-          {status ? <p className="mt-2 text-sm text-zinc-600">{status}</p> : null}
+          {status ? (
+            <p className="mt-2 text-sm text-red-600">{status.text}</p>
+          ) : null}
         </div>
       </div>
 
@@ -226,7 +242,10 @@ function CheckoutPage() {
         <div className="mt-3 grid gap-2">
           {films.map((film) => {
             const stock = availabilityMap[film.id] ?? { available: 0, total: 0 };
-            const disabled = stock.available <= 0;
+            const cartQty = cartQtyMap[film.id] ?? 0;
+            const isOutOfStock = stock.available <= 0;
+            const hasReachedLimit = stock.available > 0 && cartQty >= stock.available;
+            const disabled = isOutOfStock || hasReachedLimit;
 
             return (
               <div
@@ -237,11 +256,14 @@ function CheckoutPage() {
                   <p className="font-medium text-zinc-900">{film.title}</p>
                   <p
                     className={`text-xs ${
-                      disabled ? "text-zinc-400" : "text-emerald-600"
+                      isOutOfStock ? "text-zinc-400" : "text-emerald-600"
                     }`}
                   >
                     Available: {stock.available} / {stock.total}
                   </p>
+                  {cartQty > 0 ? (
+                    <p className="text-xs text-zinc-500">In cart: {cartQty}</p>
+                  ) : null}
                 </div>
                 <Button
                   size="sm"
@@ -265,7 +287,7 @@ function CheckoutPage() {
                     })
                   }
                 >
-                  Add
+                  {isOutOfStock ? "Out" : hasReachedLimit ? "Max" : "Add"}
                 </Button>
               </div>
             );
